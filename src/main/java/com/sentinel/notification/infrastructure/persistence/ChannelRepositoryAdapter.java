@@ -21,7 +21,8 @@ public class ChannelRepositoryAdapter implements ChannelRepository {
 
     @Override
     public NotificationChannel save(NotificationChannel channel) {
-        ChannelEntity entity = new ChannelEntity();
+        // reutilise l'entite chargee : new ChannelEntity() causait un NonUniqueObjectException avec open-in-view
+        ChannelEntity entity = channelJpaRepository.findById(channel.id()).orElseGet(ChannelEntity::new);
         entity.setId(channel.id());
         entity.setType(channel.type());
         entity.setName(channel.name());

@@ -55,7 +55,7 @@ class ChannelControllerTest {
     void getChannels_shouldReturn200WithChannelList() throws Exception {
         when(manageChannelHandler.findAll()).thenReturn(List.of(sampleChannel()));
 
-        mockMvc.perform(get("/channels"))
+        mockMvc.perform(get("/channels").header("X-User-Id", "test-user"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("alerts-discord"))
                 .andExpect(jsonPath("$[0].type").value("DISCORD"));
@@ -67,6 +67,7 @@ class ChannelControllerTest {
         when(manageChannelHandler.create(any())).thenReturn(created);
 
         mockMvc.perform(post("/channels")
+                        .header("X-User-Id", "test-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isCreated())
@@ -79,6 +80,7 @@ class ChannelControllerTest {
                 "https://discord.com/webhook/xxx", true);
 
         mockMvc.perform(post("/channels")
+                        .header("X-User-Id", "test-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalid)))
                 .andExpect(status().isBadRequest());
@@ -89,6 +91,7 @@ class ChannelControllerTest {
         ChannelRequest invalid = new ChannelRequest(ChannelType.DISCORD, "alerts-discord", "", true);
 
         mockMvc.perform(post("/channels")
+                        .header("X-User-Id", "test-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalid)))
                 .andExpect(status().isBadRequest());
@@ -98,7 +101,7 @@ class ChannelControllerTest {
     void deleteChannel_shouldReturn204AndCallHandler() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/channels/{id}", id))
+        mockMvc.perform(delete("/channels/{id}", id).header("X-User-Id", "test-user"))
                 .andExpect(status().isNoContent());
 
         verify(manageChannelHandler).delete(id);
@@ -115,9 +118,16 @@ class ChannelControllerTest {
                 "https://api.telegram.org/bot/sendMessage", true);
 
         mockMvc.perform(put("/channels/{id}", id)
+                        .header("X-User-Id", "test-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.type").value("TELEGRAM"));
+    }
+
+    @Test
+    void getChannels_shouldReturn401WhenUserIdHeaderMissing() throws Exception {
+        mockMvc.perform(get("/channels"))
+                .andExpect(status().isUnauthorized());
     }
 }
